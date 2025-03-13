@@ -1,5 +1,4 @@
 from flask import Flask, request, send_from_directory, jsonify
-from flask_cors import CORS  # ✅ Import CORS to fix frontend access
 import os
 import time
 import json
@@ -7,8 +6,6 @@ import uuid
 from threading import Thread
 
 app = Flask(__name__)
-CORS(app)  # ✅ Allow frontend requests from anywhere (or specify frontend URL)
-
 UPLOAD_FOLDER = "uploads"
 METADATA_FILE = "metadata.json"
 EXPIRATION_TIME = 86400  # 24 hours
@@ -22,7 +19,7 @@ if not os.path.exists(METADATA_FILE):
     with open(METADATA_FILE, "w") as f:
         json.dump({}, f)
 
-# ✅ Background cleanup thread to delete expired files
+# Background cleanup thread
 def cleanup_files():
     while True:
         time.sleep(600)
@@ -42,7 +39,6 @@ def cleanup_files():
 
 Thread(target=cleanup_files, daemon=True).start()
 
-# ✅ File Upload Endpoint
 @app.route("/upload", methods=["POST"])
 def upload_file():
     files = request.files.getlist("file")
@@ -70,19 +66,16 @@ def upload_file():
 
     return jsonify({"message": "Upload successful", "files": uploaded_files})
 
-# ✅ File Download Endpoint
 @app.route("/files/<filename>")
 def get_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
 
-# ✅ List Files Endpoint
 @app.route("/files", methods=["GET"])
 def list_files():
     with open(METADATA_FILE, "r") as f:
         metadata = json.load(f)
     return jsonify(metadata)
 
-# ✅ File Deletion Endpoint
 @app.route("/delete/<filename>", methods=["POST"])
 def delete_file(filename):
     with open(METADATA_FILE, "r+") as f:
@@ -97,6 +90,5 @@ def delete_file(filename):
             json.dump(metadata, f)
     return jsonify({"message": "File deleted"})
 
-# ✅ Start Flask Server
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
